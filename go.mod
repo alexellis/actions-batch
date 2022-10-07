@@ -1,4 +1,4 @@
-module actuated-batch
+module github.com/alexellis/actions-batch
 
 go 1.18
 

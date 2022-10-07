@@ -44,7 +44,7 @@ func main() {
 	}
 
 	repoName := names.GetRandomName(5)
-	fmt.Printf("repoName: %q\n", repoName)
+	fmt.Printf("Repo: %s/%q\n", owner, repoName)
 
 	t := os.TempDir()
 
@@ -162,5 +162,7 @@ func main() {
 	}
 
 	fmt.Printf("Wrote file %s\n", r.GetHTMLURL())
+
+	fmt.Printf("Delete repo at: https://github.com/%s/%s/settings\n", owner, repoName)
 
 }
