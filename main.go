@@ -182,6 +182,14 @@ func main() {
 	killCh := make(chan os.Signal, 1)
 	signal.Notify(killCh, os.Interrupt)
 
+	defer func() {
+		fmt.Printf("Deleting repo: %s/%s\n", owner, repoName)
+		_, err := client.Repositories.Delete(ctx, owner, repoName)
+		if err != nil {
+			log.Printf("failed to delete repo: %s", err)
+		}
+	}()
+
 	go func() {
 		<-killCh
 		fmt.Printf("Deleting repo: %s/%s\n", owner, repoName)
