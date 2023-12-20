@@ -15,7 +15,7 @@ This works well with actuated or GitHub's hosted runners.
 2. A workflow file is written to the repo along with the shell script, the workflow's only job is to run the shell script and exit
 3. The workflow is triggered and you can check the results
 
-`-owner` is intended to be a GitHub organisation.
+`-owner` is intended to be a GitHub organisation, but this can be adapted to a personal account by passing `--org false` to the command.
 
 ```bash
 git clone git@github.com:alexellis/actions-batch
@@ -23,10 +23,10 @@ cd actions-batch
 
 go build
 ./actions-batch \
-  --private=true \
-  --owner=actuated-samples \
-  --token-file=../pat.txt \
-  --runs-on=actuated \
+  --private \
+  --owner actuated-samples \
+  --token-file ../pat.txt \
+  --runs-on actuated \
   --file examples/slim.sh
 ```
 
