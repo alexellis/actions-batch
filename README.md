@@ -16,6 +16,15 @@ See an example:
 
 > Example output from [examples/govulncheck.sh](examples/govulncheck.sh):
 
+## What's supported?
+
+* [x] Public repos
+* [x] Private repos
+* [x] Self-hosted runners
+* [x] GitHub-hosted runners
+* [x] Using secrets via repository secrets
+* [x] Downloading the results of a build as an artifact
+
 ## How it works
 
 1. You write a bash script like the ones in [examples](examples) and pass it in as an argument
