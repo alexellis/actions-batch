@@ -22,13 +22,28 @@ This works well with self-hosted runners managed by actuated (which use a full V
 ```bash
 git clone git@github.com:alexellis/actions-batch
 cd actions-batch
+```
 
+For a personal account using a hosted runner and a public repo:
+
+```bash
+go build
+./actions-batch \
+  --owner alexellis \
+  --token-file ~/pat.txt \
+  --runs-on ubuntu-latest \
+  --file examples/cowsay.sh
+```
+
+For an organisation, using an Arm-based private repo and custom runner with 32vCPU and 256GB of RAM
+
+```bash
 go build
 ./actions-batch \
   --private \
   --owner actuated-samples \
-  --token-file ../pat.txt \
-  --runs-on actuated \
+  --token-file ~/pat.txt \
+  --runs-on actuated-arm64-32cpu-256gb \
   --file examples/slim.sh
 ```
 
@@ -52,7 +67,7 @@ on:
 jobs:
   workflow:
     name: agitated_solomon5
-    runs-on: actuated
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - name: Run the job
