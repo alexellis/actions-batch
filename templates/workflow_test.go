@@ -41,6 +41,7 @@ jobs:
       - uses: actions/checkout@v1
       - name: Run the job
         run: |
+          mkdir -p upload
           chmod +x ./job.sh
           ./job.sh
 `
@@ -93,6 +94,7 @@ jobs:
       - uses: actions/checkout@v1
       - name: Run the job
         run: |
+          mkdir -p upload
           chmod +x ./job.sh
           ./job.sh
 
