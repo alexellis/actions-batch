@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Example by Alex Ellis
+
 echo Information on main disk
 df -h /
 

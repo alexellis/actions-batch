@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Example by Alex Ellis, adapted from: https://phantomjs.org/
+
 mkdir -p output
 
 # https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/install-phantomjs.sh

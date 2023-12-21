@@ -2,6 +2,8 @@
 
 set -e -x -o pipefail
 
+# Example by Alex Ellis
+
 # Create a folder called .secrets
 #
 # Add a file called .secrets/openfaas-gateway-password with your admin user
