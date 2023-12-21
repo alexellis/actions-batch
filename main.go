@@ -24,14 +24,15 @@ import (
 func main() {
 
 	var (
-		owner        string
-		fileName     string
-		tokenFile    string
-		privateRepo  bool
-		organisation bool
-		runsOn       string
-		printLogs    bool
-		secretsFrom  string
+		owner                string
+		fileName             string
+		tokenFile            string
+		privateRepo          bool
+		organisation         bool
+		runsOn               string
+		printLogs            bool
+		secretsFrom          string
+		maxFetchLogsAttempts int
 	)
 
 	flag.StringVar(&owner, "owner", "actuated-samples", "The owner of the GitHub repository")
@@ -41,6 +42,7 @@ func main() {
 	flag.StringVar(&runsOn, "runs-on", "actuated", "Runner label for the GitHub action, use ubuntu-latest for a hosted runner")
 	flag.BoolVar(&privateRepo, "private", false, "Make the repository private")
 	flag.BoolVar(&printLogs, "logs", true, "Print the logs from the workflow run")
+	flag.IntVar(&maxFetchLogsAttempts, "max-attempts", 120, "Maximum number of attempts to fetch logs, this corresponds to job run time so each attempt has a 1 second delay between checking")
 
 	flag.StringVar(&secretsFrom, "secrets-from", "", "Create secrets from the files on disk, converting i.e. openfaas-password to: OPENFAAS_PASSWORD, and making that available via an environment variable.")
 
@@ -203,10 +205,12 @@ func main() {
 		log.Panicf("failed to create workflow file: %s", err)
 	}
 
+	st := time.Now()
+
 	fmt.Printf("Wrote file %s\n", r.GetHTMLURL())
 
 	fmt.Printf("Delete repo at: https://github.com/%s/%s/settings\n", owner, repoName)
-	st := time.Now()
+
 	killCh := make(chan os.Signal, 1)
 	signal.Notify(killCh, os.Interrupt)
 
@@ -222,13 +226,15 @@ func main() {
 	}()
 
 	if printLogs {
-		attempts := 120
+		var runStart time.Time
+		var runEnd time.Time
+
 		wait := 1 * time.Second
 
 		var workflowRuns *github.WorkflowRuns
-		fmt.Printf("Listing workflow runs for: %s/%s max attempts: %d\n", owner, repoName, attempts)
+		fmt.Printf("Listing workflow runs for: %s/%s max attempts: %d\n", owner, repoName, maxFetchLogsAttempts)
 
-		for i := 0; i < attempts; i++ {
+		for i := 0; i < maxFetchLogsAttempts; i++ {
 
 			wfs, resp, err := client.Actions.ListRepositoryWorkflowRuns(ctx, owner, repoName,
 				&github.ListWorkflowRunsOptions{
@@ -240,6 +246,10 @@ func main() {
 				})
 			if err != nil {
 				log.Printf("failed to get workflow runs: %s", err)
+			}
+			if len(wfs.WorkflowRuns) > 0 {
+				runStart = wfs.WorkflowRuns[0].GetRunStartedAt().Time
+				runEnd = wfs.WorkflowRuns[0].GetUpdatedAt().Time
 			}
 
 			if resp.StatusCode == http.StatusNotFound || len(wfs.WorkflowRuns) == 0 {
@@ -311,7 +321,10 @@ func main() {
 			}
 		}
 
-		log.Printf("Done in %s", done.Sub(st))
+		fmt.Printf("Started after: %s\n", runStart.Sub(st))
+		fmt.Printf("Compute time: %s\n", runEnd.Sub(runStart))
+
+		fmt.Printf("Done in: %s\n", done.Sub(st))
 	}
 }
 
