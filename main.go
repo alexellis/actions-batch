@@ -178,7 +178,7 @@ func main() {
 	fmt.Printf("Wrote file %s\n", r.GetHTMLURL())
 
 	fmt.Printf("Delete repo at: https://github.com/%s/%s/settings\n", owner, repoName)
-
+	st := time.Now()
 	killCh := make(chan os.Signal, 1)
 	signal.Notify(killCh, os.Interrupt)
 
@@ -206,8 +206,9 @@ func main() {
 		wait := 1 * time.Second
 
 		var workflowRuns *github.WorkflowRuns
+		fmt.Printf("Listing workflow runs for: %s/%s max attempts: %d\n", owner, repoName, attempts)
+
 		for i := 0; i < attempts; i++ {
-			log.Printf("Listing workflow runs for: %s/%s [%d/%d]", owner, repoName, i, attempts)
 
 			wfs, resp, err := client.Actions.ListRepositoryWorkflowRuns(ctx, owner, repoName,
 				&github.ListWorkflowRunsOptions{
@@ -222,15 +223,19 @@ func main() {
 			}
 
 			if resp.StatusCode == http.StatusNotFound || len(wfs.WorkflowRuns) == 0 {
-				log.Printf("No workflow runs (%d) found, waiting %s", resp.StatusCode, wait)
+				// log.Printf("No workflow runs (%d) found, waiting %s", resp.StatusCode, wait)
+				fmt.Fprintf(os.Stderr, ".")
 				time.Sleep(wait)
 				continue
 			} else {
+				fmt.Fprintf(os.Stderr, "..OK\n")
+
 				workflowRuns = wfs
 				break
 			}
 		}
 
+		done := time.Now()
 		for _, wf := range workflowRuns.WorkflowRuns {
 			fmt.Printf("Getting logs for %d\n", wf.GetID())
 
@@ -284,8 +289,9 @@ func main() {
 					fmt.Printf("%s\n", string(data))
 				}
 			}
-
 		}
+
+		log.Printf("Done in %s", done.Sub(st))
 	}
 }
 
