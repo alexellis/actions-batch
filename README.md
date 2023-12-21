@@ -170,6 +170,32 @@ xdg-open /tmp/artifacts-968188/video.flv
 
 [![Example video playing](https://pbs.twimg.com/media/GB4eGfzXcAAQOlE?format=jpg&name=medium)](https://twitter.com/alexellisuk/status/1737859786413322477/)
 
+### Build a Docker image remotely and import it to your library
+
+```bash
+go build && ./actions-batch \
+--private=false \
+--owner actuated-samples \
+--token-file ~/batch \
+--runs-on ubuntu-latest \
+--file ./examples/export-docker-image.sh 
+
+Wrote 5.665MB to /tmp/uploads2533248860
+Extracting: /tmp/artifacts-888719363/curl.tar
+2023/12/21 17:19:32 extracted zip into /tmp/artifacts-888719363: 1 files, 0 dirs (77.250512ms)
+FILE     SIZE
+curl.tar 12.37MB
+
+QUEUED DURATION TOTAL
+4s     15s      22s
+
+docker load -i /tmp/artifacts-888719363/curl.tar
+08db363dedea: Loading layer [==================================================>]  4.687MB/4.687MB
+Loaded image: curl:latest
+
+docker run -t curl:latest --version
+```
+
 ## What's left
 
 [See the issue tracker for ideas](https://github.com/alexellis/actions-batch/issues)
