@@ -29,6 +29,10 @@ on:
       - master
       - main
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   workflow:
     name: test
@@ -58,7 +62,6 @@ func Test_Workflow_WithSecrets(t *testing.T) {
 			"OPENFAAS_GATEWAY": "OPENFAAS_GATEWAY",
 			"OPENFAAS_URL":     "OPENFAAS_URL",
 		},
-		WithSecrets: true,
 	})
 
 	if err != nil {
@@ -77,6 +80,10 @@ on:
     branches:
       - master
       - main
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   workflow:

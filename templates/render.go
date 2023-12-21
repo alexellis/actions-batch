@@ -3,12 +3,19 @@ package templates
 import (
 	"bytes"
 	"log"
+	"os"
 	"text/template"
 )
 
 func Render(p RenderParams) (string, error) {
-	tmpl := template.Must(template.ParseFiles("./templates/workflow.yaml"))
-	workflowT, err := tmpl.ParseFiles("./templates/workflow.yaml")
+
+	tmplPath := "./templates/workflow.yaml"
+	if _, err := os.Stat(tmplPath); err != nil && os.IsNotExist(err) {
+		tmplPath = "./workflow.yaml"
+	}
+
+	tmpl := template.Must(template.ParseFiles(tmplPath))
+	workflowT, err := tmpl.ParseFiles(tmplPath)
 	if err != nil {
 		log.Panicf("failed to parse workflow template: %s", err)
 	}
