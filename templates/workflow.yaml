@@ -12,6 +12,10 @@ on:
       - master
       - main
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   workflow:
     name: {{ .Name }}

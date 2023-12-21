@@ -33,6 +33,7 @@ func main() {
 		privateRepo          bool
 		organisation         bool
 		runsOn               string
+		deleteRepo           bool
 		printLogs            bool
 		secretsFrom          string
 		maxFetchLogsAttempts int
@@ -49,6 +50,7 @@ func main() {
 	flag.IntVar(&maxFetchLogsAttempts, "max-attempts", 360, "Maximum number of attempts to fetch logs, this corresponds to job run time so each attempt has a 1 second delay between checking")
 	flag.DurationVar(&fetchLogsInterval, "interval", 1*time.Second, "Interval between checking for logs")
 	flag.StringVar(&secretsFrom, "secrets-from", "", "Create secrets from the files on disk, converting i.e. openfaas-password to: OPENFAAS_PASSWORD, and making that available via an environment variable.")
+	flag.BoolVar(&deleteRepo, "delete", true, "Delete the repository after the run")
 
 	flag.Parse()
 
@@ -121,13 +123,15 @@ func main() {
 		log.Panicf("failed to create repo: %s", err)
 	}
 
-	defer func() {
-		fmt.Printf("Deleting repo: %s/%s\n", owner, repoName)
-		_, err := client.Repositories.Delete(ctx, owner, repoName)
-		if err != nil {
-			log.Printf("failed to delete repo: %s", err)
-		}
-	}()
+	if deleteRepo {
+		defer func() {
+			fmt.Printf("Deleting repo: %s/%s\n", owner, repoName)
+			_, err := client.Repositories.Delete(ctx, owner, repoName)
+			if err != nil {
+				log.Printf("failed to delete repo: %s", err)
+			}
+		}()
+	}
 
 	secretsMap := map[string]string{}
 	if len(secretsFrom) > 0 {
