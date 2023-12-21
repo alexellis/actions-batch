@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mkdir -p output
+
 # https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/install-phantomjs.sh
 # Install required dependencies
 sudo apt-get install -yq chrpath libssl-dev libxft-dev libfreetype6 libfreetype6-dev libfontconfig1 libfontconfig1-dev
@@ -51,6 +53,9 @@ page.open(address, function(status) {
     t = Date.now() - t;
     console.log('Loading ' + system.args[1]);
     console.log('Loading time ' + t + ' msec');
+
+    // Save a screenshot to output folder
+    page.render('output/page.png');
   }
   phantom.exit();
 });
