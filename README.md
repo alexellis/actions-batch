@@ -41,6 +41,8 @@ cd actions-batch
 
 You'll need a Personal Access Token (PAT) with: delete_repo, repo, workflow, write:packages.
 
+### Generate some ASCII art with your personal repo
+
 For a personal account using a hosted runner and a public repo:
 
 ```bash
@@ -51,6 +53,8 @@ go build
   --runs-on ubuntu-latest \
   --file examples/cowsay.sh
 ```
+
+### Run Docker slim against an image using a self-hosted runner and a GitHub organisation
 
 For an organisation, using an Arm-based private repo and custom runner with 32vCPU and 256GB of RAM
 
@@ -93,7 +97,7 @@ jobs:
           ./job.sh
 ```
 
-## Consuming secrets within the script
+### Consume secrets for a job
 
 A folder can be given, where each file is a secret, the name will be the filename made uppercase, with `-` replaced by `_`.
 
@@ -137,7 +141,7 @@ go build && ./actions-batch \
 
 [OpenFaaS can be exposed over the Internet using an inlets tunnel](https://inlets.dev/blog/2020/10/15/openfaas-public-endpoints.html).
 
-## Downloading the result of a build
+### Download files from a job
 
 You may be processing a video with ffmpeg, building a binary, a container image, PDF, or even an ISO.
 
