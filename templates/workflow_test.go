@@ -37,6 +37,7 @@ jobs:
       - uses: actions/checkout@v1
       - name: Run the job
         run: |
+          mkdir -p upload
           chmod +x ./job.sh
           ./job.sh
 `
@@ -58,7 +59,6 @@ func Test_Workflow_WithSecrets(t *testing.T) {
 			"OPENFAAS_GATEWAY": "OPENFAAS_GATEWAY",
 			"OPENFAAS_URL":     "OPENFAAS_URL",
 		},
-		WithSecrets: true,
 	})
 
 	if err != nil {
@@ -86,6 +86,7 @@ jobs:
       - uses: actions/checkout@v1
       - name: Run the job
         run: |
+          mkdir -p upload
           chmod +x ./job.sh
           ./job.sh
 

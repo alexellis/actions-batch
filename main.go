@@ -331,6 +331,11 @@ func main() {
 					fmt.Printf("%s\n", string(data))
 				}
 			}
+
+			if err := downloadArtifacts(ctx, client, owner, repoName, wf.GetID()); err != nil {
+				log.Printf("failed to download artifacts: %s", err)
+			}
+
 		}
 
 		t := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.TabIndent)
@@ -341,6 +346,52 @@ func main() {
 		fmt.Fprintf(t, "\n")
 		t.Flush()
 	}
+}
+
+func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoName string, i int64) error {
+	artifacts, _, err := client.Actions.ListArtifacts(ctx, owner, repoName, &github.ListOptions{
+		PerPage: 100,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, a := range artifacts.Artifacts {
+		req, err := http.NewRequest(http.MethodGet, a.GetArchiveDownloadURL(), nil)
+		if err != nil {
+			return err
+		}
+
+		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		req.Header.Set("User-Agent", "actuated-batch")
+
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+
+		if res.Body != nil {
+			defer res.Body.Close()
+		}
+		tmp := os.TempDir()
+		tmpFile, err := os.CreateTemp(tmp, a.GetName())
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(tmpFile, res.Body); err != nil {
+			return err
+		}
+
+		stat, err := os.Stat(tmpFile.Name())
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Wrote %d bytes to %s\n", stat.Size(), tmpFile.Name())
+	}
+
+	return nil
 }
 
 func getLogs(logsURL *url.URL) ([]byte, error) {
