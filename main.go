@@ -13,6 +13,7 @@ import (
 	"os/user"
 	"path"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/alexellis/actions-batch/templates"
@@ -20,6 +21,8 @@ import (
 	names "github.com/inlets/inletsctl/pkg/names"
 	"golang.org/x/oauth2"
 )
+
+const branch = "master"
 
 func main() {
 
@@ -33,6 +36,7 @@ func main() {
 		printLogs            bool
 		secretsFrom          string
 		maxFetchLogsAttempts int
+		fetchLogsInterval    time.Duration
 	)
 
 	flag.StringVar(&owner, "owner", "actuated-samples", "The owner of the GitHub repository")
@@ -42,8 +46,8 @@ func main() {
 	flag.StringVar(&runsOn, "runs-on", "actuated", "Runner label for the GitHub action, use ubuntu-latest for a hosted runner")
 	flag.BoolVar(&privateRepo, "private", false, "Make the repository private")
 	flag.BoolVar(&printLogs, "logs", true, "Print the logs from the workflow run")
-	flag.IntVar(&maxFetchLogsAttempts, "max-attempts", 120, "Maximum number of attempts to fetch logs, this corresponds to job run time so each attempt has a 1 second delay between checking")
-
+	flag.IntVar(&maxFetchLogsAttempts, "max-attempts", 360, "Maximum number of attempts to fetch logs, this corresponds to job run time so each attempt has a 1 second delay between checking")
+	flag.DurationVar(&fetchLogsInterval, "interval", 1*time.Second, "Interval between checking for logs")
 	flag.StringVar(&secretsFrom, "secrets-from", "", "Create secrets from the files on disk, converting i.e. openfaas-password to: OPENFAAS_PASSWORD, and making that available via an environment variable.")
 
 	flag.Parse()
@@ -109,8 +113,9 @@ func main() {
 	}
 
 	repo, _, err := client.Repositories.Create(ctx, orgVal, &github.Repository{
-		Name:    github.String(repoName),
-		Private: github.Bool(privateRepo),
+		Name:          github.String(repoName),
+		Private:       github.Bool(privateRepo),
+		DefaultBranch: github.String(branch),
 	})
 	if err != nil {
 		log.Panicf("failed to create repo: %s", err)
@@ -181,6 +186,7 @@ func main() {
 				Name:  github.String("actuated-batch"),
 				Email: github.String("actuated-samples@users.noreply.github.com"),
 			},
+			Branch: github.String(branch),
 		})
 	if err != nil {
 		log.Panicf("failed to create workflow file: %s", err)
@@ -200,6 +206,7 @@ func main() {
 			Name:  github.String("actuated-batch"),
 			Email: github.String("actuated-samples@users.noreply.github.com"),
 		},
+		Branch: github.String(branch),
 	})
 	if err != nil {
 		log.Panicf("failed to create workflow file: %s", err)
@@ -229,17 +236,18 @@ func main() {
 		var runStart time.Time
 		var runEnd time.Time
 
-		wait := 1 * time.Second
+		wait := fetchLogsInterval
 
 		var workflowRuns *github.WorkflowRuns
-		fmt.Printf("Listing workflow runs for: %s/%s max attempts: %d\n", owner, repoName, maxFetchLogsAttempts)
+		fmt.Printf("Listing workflow runs for: %s/%s max attempts: %d (interval: %s)\n",
+			owner, repoName, maxFetchLogsAttempts, fetchLogsInterval.Round(time.Second))
 
 		for i := 0; i < maxFetchLogsAttempts; i++ {
 
 			wfs, resp, err := client.Actions.ListRepositoryWorkflowRuns(ctx, owner, repoName,
 				&github.ListWorkflowRunsOptions{
 					Status: "completed",
-					Branch: "master",
+					Branch: branch,
 					ListOptions: github.ListOptions{
 						PerPage: 100,
 					},
@@ -269,8 +277,12 @@ func main() {
 		for _, wf := range workflowRuns.WorkflowRuns {
 			fmt.Printf("Getting logs for %d\n", wf.GetID())
 
-			logsURL, resp, err := client.Actions.GetWorkflowRunLogs(ctx, owner, repoName, wf.GetID(),
-				1)
+			const maxRedirects = 1
+			logsURL, resp, err := client.Actions.GetWorkflowRunLogs(ctx,
+				owner,
+				repoName,
+				wf.GetID(),
+				maxRedirects)
 
 			log.Printf("Response: %s", resp.Status)
 			if err != nil {
@@ -321,10 +333,13 @@ func main() {
 			}
 		}
 
-		fmt.Printf("Started after: %s\n", runStart.Sub(st))
-		fmt.Printf("Compute time: %s\n", runEnd.Sub(runStart))
+		t := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.TabIndent)
+		// Queued time | Job duration | Total time
 
-		fmt.Printf("Done in: %s\n", done.Sub(st))
+		fmt.Fprintf(t, "QUEUED\tDURATION\tTOTAL\n")
+		fmt.Fprintf(t, "%s\t%s\t%s\n", runStart.Sub(st).Round(time.Second), runEnd.Sub(runStart).Round(time.Second), done.Sub(st).Round(time.Second))
+		fmt.Fprintf(t, "\n")
+		t.Flush()
 	}
 }
 

@@ -7,7 +7,7 @@
 set -e -x -o pipefail
 
 curl -sLS https://get.arkade.dev | sudo sh
-sudo arkade system install golang
+sudo arkade system install go --progress false
 
 export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
 
