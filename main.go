@@ -16,6 +16,8 @@ import (
 	"text/tabwriter"
 	"time"
 
+	gounits "github.com/docker/go-units"
+
 	"github.com/alexellis/actions-batch/templates"
 	"github.com/google/go-github/v57/github"
 	names "github.com/inlets/inletsctl/pkg/names"
@@ -71,7 +73,7 @@ func main() {
 	}
 
 	repoName := names.GetRandomName(5)
-	fmt.Printf("Repo: %s/%q\n", owner, repoName)
+	fmt.Printf("Repo: %s/%s\n", owner, repoName)
 
 	t := os.TempDir()
 
@@ -128,9 +130,11 @@ func main() {
 			fmt.Printf("Deleting repo: %s/%s\n", owner, repoName)
 			_, err := client.Repositories.Delete(ctx, owner, repoName)
 			if err != nil {
-				log.Printf("failed to delete repo: %s", err)
+				log.Panicf("failed to delete repo: %s", err)
 			}
 		}()
+	} else {
+		fmt.Printf("Delete repo at: https://github.com/%s/%s/settings\n", owner, repoName)
 	}
 
 	secretsMap := map[string]string{}
@@ -219,8 +223,6 @@ func main() {
 	st := time.Now()
 
 	fmt.Printf("Wrote file %s\n", r.GetHTMLURL())
-
-	fmt.Printf("Delete repo at: https://github.com/%s/%s/settings\n", owner, repoName)
 
 	killCh := make(chan os.Signal, 1)
 	signal.Notify(killCh, os.Interrupt)
@@ -361,11 +363,23 @@ func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoNa
 	}
 
 	for _, a := range artifacts.Artifacts {
-		req, err := http.NewRequest(http.MethodGet, a.GetArchiveDownloadURL(), nil)
+		dlUrl, dlUrlRes, err := client.Actions.DownloadArtifact(ctx, owner, repoName, a.GetID(), 1)
 		if err != nil {
 			return err
 		}
 
+		if dlUrlRes.Body != nil {
+			defer dlUrlRes.Body.Close()
+		}
+
+		if dlUrlRes.StatusCode != http.StatusOK && dlUrlRes.StatusCode != http.StatusFound {
+			return fmt.Errorf("failed to get download URL with status: %d", dlUrlRes.StatusCode)
+		}
+
+		req, err := http.NewRequest(http.MethodGet, dlUrl.String(), nil)
+		if err != nil {
+			return err
+		}
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
 		req.Header.Set("User-Agent", "actuated-batch")
 
@@ -377,6 +391,13 @@ func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoNa
 		if res.Body != nil {
 			defer res.Body.Close()
 		}
+
+		if res.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(res.Body)
+
+			return fmt.Errorf("failed to get logs with status: %d, body: %s", res.StatusCode, string(body))
+		}
+
 		tmp := os.TempDir()
 		tmpFile, err := os.CreateTemp(tmp, a.GetName())
 		if err != nil {
@@ -392,10 +413,58 @@ func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoNa
 			return err
 		}
 
-		fmt.Printf("Wrote %d bytes to %s\n", stat.Size(), tmpFile.Name())
+		fmt.Printf("Wrote %s to %s\n", gounits.HumanSize(float64(stat.Size())), tmpFile.Name())
+
+		artifactsPath, err := unzipArtifacts(tmpFile.Name(), tmp)
+		if err != nil {
+			return err
+		}
+
+		artifactsDir, err := os.ReadDir(artifactsPath)
+		if err != nil {
+			return err
+		}
+
+		t := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.TabIndent)
+		fmt.Fprintf(t, "FILE\tSIZE\n")
+		for _, f := range artifactsDir {
+			i, _ := f.Info()
+			i.Size()
+			fmt.Fprintf(t, "%s\t%s\n", f.Name(), gounits.HumanSize(float64(i.Size())))
+		}
+
+		fmt.Fprintf(t, "\n")
+		t.Flush()
+
 	}
 
 	return nil
+}
+
+func unzipArtifacts(target, outPath string) (string, error) {
+
+	tmp := os.TempDir()
+	tmpPath, err := os.MkdirTemp(tmp, "artifacts-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp dir %s, %w", tmp, err)
+	}
+
+	f, err := os.Open(target)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return "", fmt.Errorf("failed to stat file: %w", err)
+	}
+
+	if err := Unzip(f, stat.Size(), tmpPath, false); err != nil {
+		return "", fmt.Errorf("failed to unzip file: %w", err)
+	}
+
+	return tmpPath, nil
 }
 
 func getLogs(logsURL *url.URL) ([]byte, error) {

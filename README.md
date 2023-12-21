@@ -10,6 +10,12 @@ Run a shell script in an isolated, immutable environment, collect the logs or re
 
 This works well with self-hosted runners managed by actuated (which use a full VM) or GitHub's hosted runners. It may also work with container-based runners, with some limitations on what software can be used securely i.e. `docker`.
 
+See an example:
+
+[![https://pbs.twimg.com/media/GB3AqMoXwAASieh?format=jpg&name=medium](https://pbs.twimg.com/media/GB3AqMoXwAASieh?format=jpg&name=medium)](https://twitter.com/alexellisuk/status/1737757819288314091/photo/2)
+
+> Example output from [examples/govulncheck.sh](examples/govulncheck.sh):
+
 ## How it works
 
 1. You write a bash script like the ones in [examples](examples) and pass it in as an argument
@@ -119,6 +125,39 @@ go build && ./actions-batch \
 ```
 
 [OpenFaaS can be exposed over the Internet using an inlets tunnel](https://inlets.dev/blog/2020/10/15/openfaas-public-endpoints.html).
+
+## Downloading the result of a build
+
+You may be processing a video with ffmpeg, building a binary, a container image, PDF, or even an ISO.
+
+Place the result in a folder named `uploads` and the contents will be uploaded as an artifact to GitHub Actions, before being downloaded to your machine and extracted for you to view.
+
+Bear in mind that if your artifact is confidential or private, then you will need to use the `--private` flag to create a private repo.
+
+A good example is [examples/youtubedl.sh](examples/youtubedl.sh) which downloads a video from YouTube.
+
+```bash
+go build && ./actions-batch \
+  --private true \
+  --owner actuated-samples \
+  --token-file ~/batch \
+  --runs-on actuated \
+  --file ./examples/youtubedl.sh
+```
+
+Output:
+
+```bash
+Wrote 43.84kB to /tmp/uploads1127046452
+Extracting: /tmp/artifacts-968188/video.flv
+2023/12/21 16:04:01 extracted zip into /tmp/artifacts-968188: 1 files, 0 dirs (672.583µs)
+FILE      SIZE
+video.flv 47.39kB
+
+xdg-open /tmp/artifacts-968188/video.flv
+```
+
+[![Example video playing](https://pbs.twimg.com/media/GB4eGfzXcAAQOlE?format=jpg&name=medium)](https://twitter.com/alexellisuk/status/1737859786413322477/)
 
 ## What's left
 
