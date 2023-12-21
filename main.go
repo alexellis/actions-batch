@@ -57,7 +57,7 @@ func main() {
 	flag.Parse()
 
 	if fileName == "" {
-		panic("Please provide a file name")
+		panic("--file is required")
 	}
 
 	if _, err := os.Stat(tokenFile); err != nil && os.IsNotExist(err) {
@@ -73,7 +73,7 @@ func main() {
 	}
 
 	repoName := names.GetRandomName(5)
-	fmt.Printf("Repo: %s/%s\n", owner, repoName)
+	fmt.Printf("Repo: https://github.com/%s/%s\n", owner, repoName)
 
 	t := os.TempDir()
 
@@ -84,7 +84,7 @@ func main() {
 
 	// defer os.RemoveAll(tmp)
 
-	fmt.Printf("tmp: %q\n", tmp)
+	fmt.Printf("Writing templates to: %s\n", tmp)
 	os.MkdirAll(path.Join(tmp, ".github/workflows"), os.ModePerm)
 	actionsFile := path.Join(tmp, "/.github/workflows/workflow.yaml")
 	f, err := os.Create(actionsFile)
@@ -116,12 +116,11 @@ func main() {
 		orgVal = ""
 	}
 
-	repo, _, err := client.Repositories.Create(ctx, orgVal, &github.Repository{
+	if _, _, err := client.Repositories.Create(ctx, orgVal, &github.Repository{
 		Name:          github.String(repoName),
 		Private:       github.Bool(privateRepo),
 		DefaultBranch: github.String(branch),
-	})
-	if err != nil {
+	}); err != nil {
 		log.Panicf("failed to create repo: %s", err)
 	}
 
@@ -180,8 +179,6 @@ func main() {
 		log.Panicf("failed to copy file: %s", err)
 	}
 
-	fmt.Printf("created repo: %s\n", repo.GetHTMLURL())
-
 	fileBytes, err := os.ReadFile(jobFile)
 	if err != nil {
 		log.Panicf("failed to read job file: %s", err)
@@ -200,7 +197,7 @@ func main() {
 		log.Panicf("failed to create workflow file: %s", err)
 	}
 
-	fmt.Printf("Wrote file %s\n", r.GetHTMLURL())
+	fmt.Printf("Wrote job.sh to: %s\n", r.GetHTMLURL())
 
 	fileBytes, err = os.ReadFile(actionsFile)
 	if err != nil {
@@ -222,7 +219,7 @@ func main() {
 
 	st := time.Now()
 
-	fmt.Printf("Wrote file %s\n", r.GetHTMLURL())
+	fmt.Printf("Wrote workflow.yaml to: %s\n", r.GetHTMLURL())
 
 	killCh := make(chan os.Signal, 1)
 	signal.Notify(killCh, os.Interrupt)
@@ -261,6 +258,7 @@ func main() {
 			if err != nil {
 				log.Printf("failed to get workflow runs: %s", err)
 			}
+
 			if len(wfs.WorkflowRuns) > 0 {
 				runStart = wfs.WorkflowRuns[0].GetRunStartedAt().Time
 				runEnd = wfs.WorkflowRuns[0].GetUpdatedAt().Time
@@ -321,19 +319,32 @@ func main() {
 			}
 			defer zipFile.Close()
 
-			if err := Unzip(zipFile, stat.Size(), tmp, false); err != nil {
+			tmpLogs, err := os.MkdirTemp(tmp, "logs-*")
+			if err != nil {
+				log.Panicf("failed to create temp dir under: %s, %s", tmp, err)
+			}
+
+			log.Printf("Unzipping to: %s", tmpLogs)
+
+			defer os.RemoveAll(tmpLogs)
+
+			if err := Unzip(zipFile, stat.Size(), tmpLogs, false); err != nil {
 				log.Panicf("failed to unzip file: %s", err)
 			}
 
-			tmpDir, err := os.ReadDir(tmp)
+			tmpLogsDir, err := os.ReadDir(tmpLogs)
 			if err != nil {
 				log.Panicf("failed to read temp dir: %s", err)
 			}
 
-			for _, f := range tmpDir {
+			for _, f := range tmpLogsDir {
 				if strings.HasSuffix(f.Name(), ".txt") {
 					fmt.Printf("Found file: %s\n---------------------------------\n", f.Name())
-					data, _ := os.ReadFile(path.Join(tmp, f.Name()))
+					data, err := os.ReadFile(path.Join(tmpLogs, f.Name()))
+					if err != nil {
+						log.Panicf("failed to read file: %s", err)
+					}
+
 					fmt.Printf("%s\n", string(data))
 				}
 			}
@@ -341,7 +352,6 @@ func main() {
 			if err := downloadArtifacts(ctx, client, owner, repoName, wf.GetID()); err != nil {
 				log.Printf("failed to download artifacts: %s", err)
 			}
-
 		}
 
 		t := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.TabIndent)
@@ -354,8 +364,8 @@ func main() {
 	}
 }
 
-func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoName string, i int64) error {
-	artifacts, _, err := client.Actions.ListArtifacts(ctx, owner, repoName, &github.ListOptions{
+func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoName string, wfID int64) error {
+	artifacts, _, err := client.Actions.ListWorkflowRunArtifacts(ctx, owner, repoName, wfID, &github.ListOptions{
 		PerPage: 100,
 	})
 	if err != nil {

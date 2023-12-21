@@ -31,8 +31,10 @@ jobs:
       - uses: actions/checkout@v1
       - name: Run the job
         run: |
+          echo "HAS_UPLOADS=0" >> $GITHUB_ENV
           chmod +x ./job.sh
           ./job.sh
+
 {{if gt (len .Secrets) 0}}
         env:
       {{- range $key, $value := .Secrets }}
@@ -41,18 +43,15 @@ jobs:
 
 {{- end }}
 
-          if [ -d "./uploads" ]; then
-            echo "HAS_UPLOADS=1" >> $GITHUB_ENV
-          else
-            echo "HAS_UPLOADS=0" >> $GITHUB_ENV
-          fi
+      - name: "Check for uploads"
+        run: if [ -d "./uploads" ]; then echo "HAS_UPLOADS=1" >> $GITHUB_ENV ; fi
 
       - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v3
-        if: {{`${{ env.HAS_UPLOADS == '1' }}`}}
+        uses: actions/upload-artifact@v4
+        if: {{`${{ env.HAS_UPLOADS == '1'}}`}}
         with:
           if-no-files-found: ignore
           name: uploads
-          path: ./uploads/**/*
+          path: ./uploads/
           retention-days: 1
           compression-level: 1

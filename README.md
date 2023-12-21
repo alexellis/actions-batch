@@ -149,7 +149,7 @@ A good example is [examples/youtubedl.sh](examples/youtubedl.sh) which downloads
 
 ```bash
 go build && ./actions-batch \
-  --private true \
+  --private \
   --owner actuated-samples \
   --token-file ~/batch \
   --runs-on actuated \
