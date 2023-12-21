@@ -2,11 +2,13 @@
 
 A prototype for turning GitHub Actions into a batch job runner.
 
+In the 1970s - or so I hear, [time-sharing](https://en.wikipedia.org/wiki/Time-sharing) was all the rage, with users being able to submit tasks or batch jobs to large computers, and to collect the results when the jobs where done.
+
 ## Goal
 
-Run a shell script in an isolated, immutable environment.
+Run a shell script in an isolated, immutable environment, collect the logs or results.
 
-This works well with actuated or GitHub's hosted runners.
+This works well with self-hosted runners managed by actuated (which use a full VM) or GitHub's hosted runners. It may also work with container-based runners, with some limitations on what software can be used securely i.e. `docker`.
 
 ## How it works
 
@@ -61,14 +63,12 @@ jobs:
 
 ## What's left
 
-The part that's left is:
-
-1. Getting a webhook event when the "batch job" is done
-2. Collecting the results from the workflow run, perhaps you can post these to S3 directly from bash?
-3. Deleting the repo to clean things up
+[See the issue tracker for ideas](https://github.com/alexellis/actions-batch/issues)
 
 The Rate Limit for a Personal Access Token is quite limited, so this would need to be run as a GitHub App.
 
 ## License
 
 MIT
+
+DCO - a Signed-off-by message will be required in each commit message i.e. `git commit --signoff`
