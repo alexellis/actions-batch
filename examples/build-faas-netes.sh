@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -x -o pipefail
+
 # Example by Alex Ellis
 
 git clone --depth=1 https://github.com/openfaas/faas-netes

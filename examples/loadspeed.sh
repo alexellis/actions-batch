@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -x -o pipefail
+
 # Example by Alex Ellis, adapted from: https://phantomjs.org/
 
 mkdir -p output
