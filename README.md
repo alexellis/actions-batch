@@ -76,6 +76,50 @@ jobs:
           ./job.sh
 ```
 
+## Consuming secrets within the script
+
+A folder can be given, where each file is a secret, the name will be the filename made uppercase, with `-` replaced by `_`.
+
+Take the following example to log into OpenFaaS:
+
+```bash
+#!/bin/bash
+
+set -e -x -o pipefail
+
+curl -sLS https://get.arkade.dev | sudo sh
+
+arkade get faas-cli --quiet
+sudo mv $HOME/.arkade/bin/faas-cli /usr/local/bin/
+sudo chmod +x /usr/local/bin/faas-cli 
+
+echo "${OPENFAAS_GATEWAY_PASSWORD}" | faas-cli login -g "${OPENFAAS_URL}"/function/printer -u admin --password-stdin
+curl -h "X-Url: ${OPENFAAS_URL}" https://openfaas.o6s.io/function/printer 
+```
+
+Therefore just create two files:
+
+```bash
+mkdir -p .secrets
+echo "admin password" > .secrets/openfaas-gateway-password
+echo "https://gateway.example.com" > .secrets/openfaas-url
+```
+
+Then run the script passing in that folder:
+
+```bash
+go build && ./actions-batch \
+  --private=false \
+  --owner alexellis \
+  --token-file ~/batch \
+  --runs-on ubuntu-latest \
+  --org=false \
+  --file examples/secret.sh \
+  --secrets-from .secrets
+```
+
+[OpenFaaS can be exposed over the Internet using an inlets tunnel](https://inlets.dev/blog/2020/10/15/openfaas-public-endpoints.html).
+
 ## What's left
 
 [See the issue tracker for ideas](https://github.com/alexellis/actions-batch/issues)

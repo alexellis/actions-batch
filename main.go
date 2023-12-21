@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"io"
@@ -13,11 +15,12 @@ import (
 	"os/user"
 	"path"
 	"strings"
-	"text/template"
 	"time"
 
+	"github.com/alexellis/actions-batch/templates"
 	"github.com/google/go-github/v57/github"
 	names "github.com/inlets/inletsctl/pkg/names"
+	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/oauth2"
 )
 
@@ -31,6 +34,7 @@ func main() {
 		organisation bool
 		runsOn       string
 		printLogs    bool
+		secretsFrom  string
 	)
 
 	flag.StringVar(&owner, "owner", "actuated-samples", "The owner of the GitHub repository")
@@ -41,6 +45,8 @@ func main() {
 	flag.BoolVar(&privateRepo, "private", false, "Make the repository private")
 	flag.BoolVar(&printLogs, "logs", true, "Print the logs from the workflow run")
 
+	flag.StringVar(&secretsFrom, "secrets-from", "", "Create secrets from the files on disk, converting i.e. openfaas-password to: OPENFAAS_PASSWORD, and making that available via an environment variable.")
+
 	flag.Parse()
 
 	if fileName == "" {
@@ -49,6 +55,14 @@ func main() {
 
 	if _, err := os.Stat(tokenFile); err != nil && os.IsNotExist(err) {
 		panic("Please provide a valid token file")
+	}
+
+	if len(secretsFrom) > 0 {
+		if stat, err := os.Stat(secretsFrom); err != nil && os.IsNotExist(err) {
+			panic("Please provide a valid folder for the secrets-from flag")
+		} else if !stat.IsDir() {
+			panic(fmt.Sprintf("%s is not a folder", secretsFrom))
+		}
 	}
 
 	repoName := names.GetRandomName(5)
@@ -63,12 +77,6 @@ func main() {
 
 	// defer os.RemoveAll(tmp)
 
-	tmpl := template.Must(template.ParseFiles("templates/workflow.yaml"))
-	workflowT, err := tmpl.ParseFiles("templates/workflow.yaml")
-	if err != nil {
-		log.Panicf("failed to parse workflow template: %s", err)
-	}
-
 	fmt.Printf("tmp: %q\n", tmp)
 	os.MkdirAll(path.Join(tmp, ".github/workflows"), os.ModePerm)
 	actionsFile := path.Join(tmp, "/.github/workflows/workflow.yaml")
@@ -82,34 +90,6 @@ func main() {
 	loginU, _ := user.Current()
 	if loginU != nil {
 		login = loginU.Username
-	}
-
-	if err := workflowT.Execute(f, map[string]string{
-		"Name":   repoName,
-		"Login":  login,
-		"Date":   time.Now().String(),
-		"RunsOn": runsOn,
-	}); err != nil {
-		log.Panicf("failed to execute workflow template: %s", err)
-	}
-
-	f.Close()
-
-	fIn, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
-	if err != nil {
-		log.Panicf("failed to open file: %s", err)
-	}
-	defer fIn.Close()
-
-	jobFile := path.Join(tmp, "/job.sh")
-	fsh, err := os.Create(jobFile)
-	if err != nil {
-		log.Panicf("failed to create workflow file: %s", err)
-	}
-	defer fsh.Close()
-
-	if _, err := io.Copy(fsh, fIn); err != nil {
-		log.Panicf("failed to copy file: %s", err)
 	}
 
 	token, err := os.ReadFile(tokenFile)
@@ -135,6 +115,57 @@ func main() {
 	})
 	if err != nil {
 		log.Panicf("failed to create repo: %s", err)
+	}
+
+	defer func() {
+		fmt.Printf("Deleting repo: %s/%s\n", owner, repoName)
+		_, err := client.Repositories.Delete(ctx, owner, repoName)
+		if err != nil {
+			log.Printf("failed to delete repo: %s", err)
+		}
+	}()
+
+	secretsMap := map[string]string{}
+	if len(secretsFrom) > 0 {
+		if mapped, err := createSecrets(ctx, client, owner, repoName, secretsFrom); err != nil {
+			log.Panicf("failed to create secrets: %s", err)
+		} else {
+			secretsMap = mapped
+		}
+	}
+
+	out, err := templates.Render(templates.RenderParams{
+		Name:    repoName,
+		Login:   login,
+		Date:    time.Now().String(),
+		RunsOn:  runsOn,
+		Secrets: secretsMap,
+	})
+	if err != nil {
+		log.Panicf("failed to render workflow template: %s", err)
+	}
+
+	if _, err := f.WriteString(out); err != nil {
+		log.Panicf("failed to write workflow file: %s", err)
+	}
+
+	f.Close()
+
+	fIn, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
+	if err != nil {
+		log.Panicf("failed to open file: %s", err)
+	}
+	defer fIn.Close()
+
+	jobFile := path.Join(tmp, "/job.sh")
+	fsh, err := os.Create(jobFile)
+	if err != nil {
+		log.Panicf("failed to create workflow file: %s", err)
+	}
+	defer fsh.Close()
+
+	if _, err := io.Copy(fsh, fIn); err != nil {
+		log.Panicf("failed to copy file: %s", err)
 	}
 
 	fmt.Printf("created repo: %s\n", repo.GetHTMLURL())
@@ -181,14 +212,6 @@ func main() {
 	st := time.Now()
 	killCh := make(chan os.Signal, 1)
 	signal.Notify(killCh, os.Interrupt)
-
-	defer func() {
-		fmt.Printf("Deleting repo: %s/%s\n", owner, repoName)
-		_, err := client.Repositories.Delete(ctx, owner, repoName)
-		if err != nil {
-			log.Printf("failed to delete repo: %s", err)
-		}
-	}()
 
 	go func() {
 		<-killCh
@@ -323,4 +346,73 @@ func getLogs(logsURL *url.URL) ([]byte, error) {
 
 	return body, nil
 
+}
+
+func createSecrets(ctx context.Context, client *github.Client, owner, repoName, secretsFrom string) (map[string]string, error) {
+	mapped := map[string]string{}
+
+	key, _, err := client.Actions.GetRepoPublicKey(ctx, owner, repoName)
+	if err != nil {
+		return nil, err
+	}
+
+	dir, err := os.ReadDir(secretsFrom)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range dir {
+		if f.IsDir() {
+			continue
+		}
+
+		secretName := strings.ToUpper(strings.ReplaceAll(f.Name(), "-", "_"))
+		secretData, _ := os.ReadFile(path.Join(secretsFrom, f.Name()))
+
+		encryptedVal, err := encryptSecret(key, strings.TrimSpace(string(secretData)))
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err := client.Actions.CreateOrUpdateRepoSecret(ctx, owner, repoName, &github.EncryptedSecret{
+			Name:           secretName,
+			EncryptedValue: encryptedVal,
+			KeyID:          key.GetKeyID(),
+		}); err != nil {
+			return nil, err
+		} else {
+			fmt.Printf("Created secret: %s (%s)\n", secretName, path.Join(secretsFrom, f.Name()))
+			mapped[secretName] = string(secretName)
+		}
+
+	}
+
+	return mapped, nil
+}
+
+func encryptSecret(key *github.PublicKey, secret string) (string, error) {
+	return EncodeWithPublicKey(secret, key.GetKey())
+}
+
+func EncodeWithPublicKey(text string, publicKey string) (string, error) {
+	// Decode the public key from base64
+	publicKeyBytes, err := base64.StdEncoding.DecodeString(publicKey)
+	if err != nil {
+		return "", err
+	}
+
+	// Decode the public key
+	var publicKeyDecoded [32]byte
+	copy(publicKeyDecoded[:], publicKeyBytes)
+
+	// Encrypt the secret value
+	encrypted, err := box.SealAnonymous(nil, []byte(text), (*[32]byte)(publicKeyBytes), rand.Reader)
+
+	if err != nil {
+		return "", err
+	}
+	// Encode the encrypted value in base64
+	encryptedBase64 := base64.StdEncoding.EncodeToString(encrypted)
+
+	return encryptedBase64, nil
 }

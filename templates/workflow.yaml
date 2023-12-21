@@ -22,3 +22,10 @@ jobs:
         run: |
           chmod +x ./job.sh
           ./job.sh
+{{if gt (len .Secrets) 0}}
+        env:
+      {{- range $key, $value := .Secrets }}
+          {{ $key }}: {{`${{`}} secrets.{{ $value }} {{`}}`}}
+      {{- end }}
+
+{{- end }}

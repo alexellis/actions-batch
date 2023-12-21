@@ -1,2 +1,4 @@
 /actions-batch
 /bin
+/.secrets
+/example/.secrets
