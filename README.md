@@ -39,6 +39,8 @@ git clone git@github.com:alexellis/actions-batch
 cd actions-batch
 ```
 
+You'll need a Personal Access Token (PAT) with: delete_repo, repo, workflow, write:packages.
+
 For a personal account using a hosted runner and a public repo:
 
 ```bash
