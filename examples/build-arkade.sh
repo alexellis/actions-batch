@@ -11,7 +11,7 @@ set -e -x -o pipefail
 # Example by Alex Ellis
 
 curl -sLS https://get.arkade.dev | sudo sh
-sudo arkade system install go --progress false
+sudo arkade system install go --progress=false
 
 export PATH=$PATH:$HOME/.arkade/bin:$HOME/go/bin:/usr/local/go/bin
 
