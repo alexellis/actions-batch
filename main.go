@@ -18,6 +18,7 @@ import (
 
 	gounits "github.com/docker/go-units"
 
+	"github.com/alexellis/actions-batch/pkg"
 	"github.com/alexellis/actions-batch/templates"
 	"github.com/google/go-github/v57/github"
 	names "github.com/inlets/inletsctl/pkg/names"
@@ -55,6 +56,15 @@ func main() {
 	flag.BoolVar(&deleteRepo, "delete", true, "Delete the repository after the run")
 
 	flag.Parse()
+
+	fmt.Printf(
+
+		`┏━┓┏━╸╺┳╸╻┏━┓┏┓╻┏━┓   ┏┓ ┏━┓╺┳╸┏━╸╻ ╻
+┣━┫┃   ┃ ┃┃ ┃┃┗┫┗━┓╺━╸┣┻┓┣━┫ ┃ ┃  ┣━┫
+╹ ╹┗━╸ ╹ ╹┗━┛╹ ╹┗━┛   ┗━┛╹ ╹ ╹ ┗━╸╹ ╹
+By Alex Ellis %d - %s (%s)
+
+`, time.Now().Year(), pkg.Version, pkg.GitCommit)
 
 	if fileName == "" {
 		panic("--file is required")

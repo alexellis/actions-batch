@@ -1,6 +1,6 @@
 package pkg
 
 var (
-	GitCommit string
-	Version   string
+	GitCommit string = "dev"
+	Version   string = "dev"
 )
