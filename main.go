@@ -26,6 +26,7 @@ import (
 )
 
 const branch = "master"
+const quietUnzip = true
 
 func main() {
 
@@ -42,6 +43,7 @@ func main() {
 		maxFetchLogsAttempts int
 		fetchLogsInterval    time.Duration
 		verbose              bool
+		artifactsPath        string
 	)
 
 	flag.StringVar(&owner, "owner", "actuated-samples", "The owner of the GitHub repository")
@@ -56,6 +58,7 @@ func main() {
 	flag.StringVar(&secretsFrom, "secrets-from", "", "Create secrets from the files on disk, converting i.e. openfaas-password to: OPENFAAS_PASSWORD, and making that available via an environment variable.")
 	flag.BoolVar(&deleteRepo, "delete", true, "Delete the repository after the run")
 	flag.BoolVar(&verbose, "verbose", false, "Verbose logging")
+	flag.StringVar(&artifactsPath, "out", "", "Path to use to unzip the artifacts folder from the build, if there is one")
 
 	flag.Parse()
 
@@ -245,7 +248,7 @@ By Alex Ellis %d - %s (%s)
 	}()
 
 	fmt.Printf("----------------------------------------\n")
-	fmt.Printf("\nView job at: https://github.com/%s/%s/actions\n", owner, repoName)
+	fmt.Printf("View job at: \nhttps://github.com/%s/%s/actions\n", owner, repoName)
 	fmt.Printf("----------------------------------------\n")
 
 	if printLogs {
@@ -341,7 +344,7 @@ By Alex Ellis %d - %s (%s)
 
 			defer os.RemoveAll(tmpLogs)
 
-			if err := Unzip(zipFile, stat.Size(), tmpLogs, false); err != nil {
+			if err := Unzip(zipFile, stat.Size(), tmpLogs, quietUnzip); err != nil {
 				log.Panicf("failed to unzip file: %s", err)
 			}
 
@@ -362,7 +365,7 @@ By Alex Ellis %d - %s (%s)
 				}
 			}
 
-			if err := downloadArtifacts(ctx, client, owner, repoName, wf.GetID()); err != nil {
+			if err := downloadArtifacts(ctx, client, owner, repoName, wf.GetID(), artifactsPath); err != nil {
 				log.Printf("failed to download artifacts: %s", err)
 			}
 		}
@@ -377,7 +380,7 @@ By Alex Ellis %d - %s (%s)
 	}
 }
 
-func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoName string, wfID int64) error {
+func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoName string, wfID int64, artifactsPath string) error {
 	artifacts, _, err := client.Actions.ListWorkflowRunArtifacts(ctx, owner, repoName, wfID, &github.ListOptions{
 		PerPage: 100,
 	})
@@ -431,14 +434,12 @@ func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoNa
 			return err
 		}
 
-		stat, err := os.Stat(tmpFile.Name())
-		if err != nil {
-			return err
+		outPath := tmp
+		if len(artifactsPath) > 0 {
+			outPath = artifactsPath
 		}
 
-		fmt.Printf("Wrote %s to %s\n", gounits.HumanSize(float64(stat.Size())), tmpFile.Name())
-
-		artifactsPath, err := unzipArtifacts(tmpFile.Name(), tmp)
+		artifactsPath, err := unzipArtifacts(tmpFile.Name(), outPath)
 		if err != nil {
 			return err
 		}
@@ -448,6 +449,7 @@ func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoNa
 			return err
 		}
 
+		fmt.Printf("Contents of: %s\n\n", artifactsPath)
 		t := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.TabIndent)
 		fmt.Fprintf(t, "FILE\tSIZE\n")
 		for _, f := range artifactsDir {
@@ -466,10 +468,16 @@ func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoNa
 
 func unzipArtifacts(target, outPath string) (string, error) {
 
-	tmp := os.TempDir()
-	tmpPath, err := os.MkdirTemp(tmp, "artifacts-*")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir %s, %w", tmp, err)
+	targetPath := ""
+	if len(outPath) > 0 {
+		targetPath = outPath
+	} else {
+		tmp := os.TempDir()
+		tmpPath, err := os.MkdirTemp(tmp, "artifacts-*")
+		if err != nil {
+			return "", fmt.Errorf("failed to create temp dir %s, %w", tmp, err)
+		}
+		targetPath = tmpPath
 	}
 
 	f, err := os.Open(target)
@@ -483,11 +491,11 @@ func unzipArtifacts(target, outPath string) (string, error) {
 		return "", fmt.Errorf("failed to stat file: %w", err)
 	}
 
-	if err := Unzip(f, stat.Size(), tmpPath, false); err != nil {
+	if err := Unzip(f, stat.Size(), targetPath, quietUnzip); err != nil {
 		return "", fmt.Errorf("failed to unzip file: %w", err)
 	}
 
-	return tmpPath, nil
+	return targetPath, nil
 }
 
 func getLogs(logsURL *url.URL) ([]byte, error) {

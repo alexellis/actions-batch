@@ -33,18 +33,18 @@ time git clone https://github.com/torvalds/linux.git linux.git --depth=1 --branc
 
 if [ "$(uname -m)" = "aarch64" ]; then
     echo "Building for ARM64"
-    time make Image -j$(nproc) && mkdir -p uploads
+    time make Image -j$(nproc) && mkdir -p ../uploads
 
     # Save the resulting Kernel binary so that it's downloaded to the user's computer
-    cp ./arch/arm64/boot/Image ./uploads/
+    cp ./arch/arm64/boot/Image ../uploads/
 else
     echo "Building for x86_64"
-    make -j$(nproc) vmlinux && mkdir -p uploads
+    make -j$(nproc) vmlinux && mkdir -p ../uploads
 
     # Save the resulting Kernel binary so that it's downloaded to the user's computer
-    cp vmlinux ./uploads/
+    cp vmlinux ../uploads/
 fi
 
 echo "Build complete, size of Kernel:"
 
-du -h ./uploads/
+du -h ../uploads/

@@ -23,6 +23,9 @@ permissions:
   repository-projects: read
   statuses: read
 
+env:
+  HAS_UPLOADS: 0
+
 jobs:
   workflow:
     name: {{ .Name }}

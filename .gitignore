@@ -2,3 +2,4 @@
 /bin
 /.secrets
 /example/.secrets
+/out/**

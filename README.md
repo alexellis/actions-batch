@@ -174,6 +174,21 @@ xdg-open /tmp/artifacts-968188/video.flv
 
 [![Example video playing](https://pbs.twimg.com/media/GB4eGfzXcAAQOlE?format=jpg&name=medium)](https://twitter.com/alexellisuk/status/1737859786413322477/)
 
+### Build a Linux Kernel and download it a working folder
+
+```bash
+mkdir -p kernel-bin
+go build &&./actions-batch \
+  --owner alexellis \
+  --org=false \
+  --file examples/linux-kernel.sh \
+  --runs-on ubuntu-latest \
+  --out ./kernel-bin
+
+du -h kernel-bin/*
+```
+```
+
 ### Build a Docker image remotely and import it to your library
 
 ```bash
