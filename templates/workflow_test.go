@@ -32,6 +32,13 @@ on:
 permissions:
   id-token: write
   contents: read
+  checks: read
+  actions: read
+  issues: read
+  packages: write
+  pull-requests: read
+  repository-projects: read
+  statuses: read
 
 jobs:
   workflow:
@@ -41,9 +48,24 @@ jobs:
       - uses: actions/checkout@v1
       - name: Run the job
         run: |
-          mkdir -p upload
+          echo "HAS_UPLOADS=0" >> $GITHUB_ENV
           chmod +x ./job.sh
           ./job.sh
+
+
+
+      - name: "Check for uploads"
+        run: if [ -d "./uploads" ]; then echo "HAS_UPLOADS=1" >> $GITHUB_ENV ; fi
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        if: ${{ env.HAS_UPLOADS == '1'}}
+        with:
+          if-no-files-found: ignore
+          name: uploads
+          path: ./uploads/
+          retention-days: 1
+          compression-level: 1
 `
 	got := res
 
@@ -85,6 +107,13 @@ on:
 permissions:
   id-token: write
   contents: read
+  checks: read
+  actions: read
+  issues: read
+  packages: write
+  pull-requests: read
+  repository-projects: read
+  statuses: read
 
 jobs:
   workflow:
@@ -94,13 +123,28 @@ jobs:
       - uses: actions/checkout@v1
       - name: Run the job
         run: |
-          mkdir -p upload
+          echo "HAS_UPLOADS=0" >> $GITHUB_ENV
           chmod +x ./job.sh
           ./job.sh
 
+
         env:
           OPENFAAS_GATEWAY: ${{ secrets.OPENFAAS_GATEWAY }}
-          OPENFAAS_URL: ${{ secrets.OPENFAAS_URL }}`
+          OPENFAAS_URL: ${{ secrets.OPENFAAS_URL }}
+
+      - name: "Check for uploads"
+        run: if [ -d "./uploads" ]; then echo "HAS_UPLOADS=1" >> $GITHUB_ENV ; fi
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v4
+        if: ${{ env.HAS_UPLOADS == '1'}}
+        with:
+          if-no-files-found: ignore
+          name: uploads
+          path: ./uploads/
+          retention-days: 1
+          compression-level: 1
+`
 	got := res
 
 	if got != want {
