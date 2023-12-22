@@ -4,6 +4,8 @@ Time-sharing supercomputer built on GitHub Actions.
 
 In the 1970s - or so I hear, [time-sharing](https://en.wikipedia.org/wiki/Time-sharing) was all the rage, with users being able to submit tasks or batch jobs to large computers, and to collect the results when the jobs where done.
 
+[Read the blog post: GitHub Actions as a time-sharing supercomputer](https://blog.alexellis.io/github-actions-timesharing-supercomputer/)
+
 ## Goal
 
 Run a shell script in an isolated, immutable environment, collect the logs or results.
