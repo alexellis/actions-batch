@@ -41,6 +41,7 @@ func main() {
 		secretsFrom          string
 		maxFetchLogsAttempts int
 		fetchLogsInterval    time.Duration
+		verbose              bool
 	)
 
 	flag.StringVar(&owner, "owner", "actuated-samples", "The owner of the GitHub repository")
@@ -54,6 +55,7 @@ func main() {
 	flag.DurationVar(&fetchLogsInterval, "interval", 1*time.Second, "Interval between checking for logs")
 	flag.StringVar(&secretsFrom, "secrets-from", "", "Create secrets from the files on disk, converting i.e. openfaas-password to: OPENFAAS_PASSWORD, and making that available via an environment variable.")
 	flag.BoolVar(&deleteRepo, "delete", true, "Delete the repository after the run")
+	flag.BoolVar(&verbose, "verbose", false, "Verbose logging")
 
 	flag.Parse()
 
@@ -92,9 +94,12 @@ By Alex Ellis %d - %s (%s)
 		log.Panicf("failed to create temp dir %s, %s", t, err)
 	}
 
-	// defer os.RemoveAll(tmp)
+	defer os.RemoveAll(tmp)
 
-	fmt.Printf("Writing templates to: %s\n", tmp)
+	if verbose {
+		fmt.Printf("Writing templates to: %s\n", tmp)
+	}
+
 	os.MkdirAll(path.Join(tmp, ".github/workflows"), os.ModePerm)
 	actionsFile := path.Join(tmp, "/.github/workflows/workflow.yaml")
 	f, err := os.Create(actionsFile)
