@@ -46,6 +46,8 @@ cd actions-batch
 
 You'll need a Personal Access Token (PAT) with: delete_repo, repo, workflow, write:packages.
 
+You can download a binary from the [Releases page](https://github.com/alexellis/actions-batch/releases) or build it from source.
+
 ### Generate some ASCII art with your personal repo
 
 For a personal account using a hosted runner and a public repo:
@@ -134,7 +136,7 @@ echo "https://gateway.example.com" > .secrets/openfaas-url
 Then run the script passing in that folder:
 
 ```bash
-go build && ./actions-batch \
+actions-batch \
   --private=false \
   --owner alexellis \
   --token-file ~/batch \
@@ -157,7 +159,7 @@ Bear in mind that if your artifact is confidential or private, then you will nee
 A good example is [examples/youtubedl.sh](examples/youtubedl.sh) which downloads a video from YouTube.
 
 ```bash
-go build && ./actions-batch \
+actions-batch \
   --private \
   --owner actuated-samples \
   --token-file ~/batch \
@@ -196,7 +198,7 @@ du -h kernel-bin/*
 ### Build a Docker image remotely and import it to your library
 
 ```bash
-go build && ./actions-batch \
+actions-batch \
 --private=false \
 --owner actuated-samples \
 --token-file ~/batch \
