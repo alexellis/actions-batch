@@ -30,5 +30,6 @@ yt-dlp -o "./videos/video.flv" "$TARGET" && \
   du -h -d 0 ./videos/*
 
 # Convert to mp4
-for i in videos/*; do time ffmpeg -i "$i" ./uploads/"$i".mp4; done
+cd videos
+for i in *; do time ffmpeg -i "$i" ../uploads/"$i".mp4; done
 
