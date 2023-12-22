@@ -221,9 +221,10 @@ docker run -t curl:latest --version
 
 ## What's left
 
-[See the issue tracker for ideas](https://github.com/alexellis/actions-batch/issues)
+The main thing I'd like is more examples of workloads that can be run on a Linux system
 
-The Rate Limit for a Personal Access Token is quite limited, so this would need to be run as a GitHub App.
+* [Browse the examples](/examples)
+* [See the issue tracker](https://github.com/alexellis/actions-batch/issues)
 
 ## License
 
