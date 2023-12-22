@@ -31,3 +31,7 @@ make oldconfig
 
 time make vmlinux -j$(nproc)
 du -h ./vmlinux
+
+
+# Save the resulting Kernel binary so that it's downloaded to the user's computer
+cp vmlinux ./uploads/
