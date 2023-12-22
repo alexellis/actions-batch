@@ -1,6 +1,10 @@
 package templates
 
-import "testing"
+import (
+	"log"
+	"os"
+	"testing"
+)
 
 func Test_Workflow_WithoutSecrets(t *testing.T) {
 
@@ -40,6 +44,9 @@ permissions:
   repository-projects: read
   statuses: read
 
+env:
+  HAS_UPLOADS: 0
+
 jobs:
   workflow:
     name: test
@@ -70,6 +77,12 @@ jobs:
 	got := res
 
 	if got != want {
+		tmp := os.TempDir()
+		tmpFile, _ := os.CreateTemp(tmp, "test-*")
+
+		log.Printf("tmpFile: %s", tmpFile.Name())
+		os.WriteFile(tmpFile.Name(), []byte(got), 0644)
+
 		t.Fatalf("want\n%q\n\ngot\n%q\n\n", want, got)
 	}
 }
@@ -115,6 +128,9 @@ permissions:
   repository-projects: read
   statuses: read
 
+env:
+  HAS_UPLOADS: 0
+
 jobs:
   workflow:
     name: test
@@ -148,6 +164,13 @@ jobs:
 	got := res
 
 	if got != want {
+
+		tmp := os.TempDir()
+		tmpFile, _ := os.CreateTemp(tmp, "test-*")
+
+		log.Printf("tmpFile: %s", tmpFile.Name())
+		os.WriteFile(tmpFile.Name(), []byte(got), 0644)
+
 		t.Fatalf("want\n%q\n\ngot\n%q\n\n", want, got)
 	}
 }
