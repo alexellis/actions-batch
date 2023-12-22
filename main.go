@@ -46,7 +46,7 @@ func main() {
 	flag.StringVar(&fileName, "file", "", "The name of the file to run via a GitHub Action")
 	flag.StringVar(&tokenFile, "token-file", "", "The name of the PAT token file")
 	flag.BoolVar(&organisation, "org", true, "Create the repository in an organization")
-	flag.StringVar(&runsOn, "runs-on", "actuated", "Runner label for the GitHub action, use ubuntu-latest for a hosted runner")
+	flag.StringVar(&runsOn, "runs-on", "ubuntu-latest", "Runner label for the GitHub action, use ubuntu-latest for a hosted runner")
 	flag.BoolVar(&privateRepo, "private", false, "Make the repository private")
 	flag.BoolVar(&printLogs, "logs", true, "Print the logs from the workflow run")
 	flag.IntVar(&maxFetchLogsAttempts, "max-attempts", 360, "Maximum number of attempts to fetch logs, this corresponds to job run time so each attempt has a 1 second delay between checking")
@@ -183,7 +183,7 @@ func main() {
 	if err != nil {
 		log.Panicf("failed to read job file: %s", err)
 	}
-	r, _, err := client.Repositories.CreateFile(ctx, owner, repoName, "job.sh",
+	if _, _, err := client.Repositories.CreateFile(ctx, owner, repoName, "job.sh",
 		&github.RepositoryContentFileOptions{
 			Message: github.String("Add job.sh"),
 			Content: []byte(fileBytes),
@@ -192,19 +192,16 @@ func main() {
 				Email: github.String("actuated-samples@users.noreply.github.com"),
 			},
 			Branch: github.String(branch),
-		})
-	if err != nil {
+		}); err != nil {
 		log.Panicf("failed to create workflow file: %s", err)
 	}
-
-	fmt.Printf("Wrote job.sh to: %s\n", r.GetHTMLURL())
 
 	fileBytes, err = os.ReadFile(actionsFile)
 	if err != nil {
 		log.Panicf("failed to read workflow file: %s", err)
 	}
 
-	r, _, err = client.Repositories.CreateFile(ctx, owner, repoName, ".github/workflows/workflow.yaml", &github.RepositoryContentFileOptions{
+	if _, _, err = client.Repositories.CreateFile(ctx, owner, repoName, ".github/workflows/workflow.yaml", &github.RepositoryContentFileOptions{
 		Message: github.String("Add workflow for GitHub Actions"),
 		Content: fileBytes,
 		Author: &github.CommitAuthor{
@@ -212,14 +209,11 @@ func main() {
 			Email: github.String("actuated-samples@users.noreply.github.com"),
 		},
 		Branch: github.String(branch),
-	})
-	if err != nil {
+	}); err != nil {
 		log.Panicf("failed to create workflow file: %s", err)
 	}
 
 	st := time.Now()
-
-	fmt.Printf("Wrote workflow.yaml to: %s\n", r.GetHTMLURL())
 
 	killCh := make(chan os.Signal, 1)
 	signal.Notify(killCh, os.Interrupt)
@@ -234,6 +228,10 @@ func main() {
 
 		os.Exit(0)
 	}()
+
+	fmt.Printf("----------------------------------------\n")
+	fmt.Printf("\nView job at: https://github.com/%s/%s/actions\n", owner, repoName)
+	fmt.Printf("----------------------------------------\n")
 
 	if printLogs {
 		var runStart time.Time
