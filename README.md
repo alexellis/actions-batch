@@ -192,7 +192,6 @@ go build &&./actions-batch \
 
 du -h kernel-bin/*
 ```
-```
 
 ### Build a Docker image remotely and import it to your library
 

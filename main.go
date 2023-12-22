@@ -88,6 +88,7 @@ By Alex Ellis %d - %s (%s)
 	}
 
 	repoName := names.GetRandomName(5)
+	fmt.Printf("Job file: %s\n", path.Base(fileName))
 	fmt.Printf("Repo: https://github.com/%s/%s\n", owner, repoName)
 
 	t := os.TempDir()
@@ -355,13 +356,18 @@ By Alex Ellis %d - %s (%s)
 
 			for _, f := range tmpLogsDir {
 				if strings.HasSuffix(f.Name(), ".txt") {
-					fmt.Printf("Found file: %s\n---------------------------------\n", f.Name())
-					data, err := os.ReadFile(path.Join(tmpLogs, f.Name()))
-					if err != nil {
-						log.Panicf("failed to read file: %s", err)
-					}
 
-					fmt.Printf("%s\n", string(data))
+					// So that we see the program output
+					if !strings.Contains(f.Name(), "Upload Artifact") &&
+						!strings.Contains(f.Name(), "Complete job") {
+						fmt.Printf("Found file: %s\n---------------------------------\n", f.Name())
+						data, err := os.ReadFile(path.Join(tmpLogs, f.Name()))
+						if err != nil {
+							log.Panicf("failed to read file: %s", err)
+						}
+
+						fmt.Printf("%s\n", string(data))
+					}
 				}
 			}
 
@@ -434,7 +440,7 @@ func downloadArtifacts(ctx context.Context, client *github.Client, owner, repoNa
 			return err
 		}
 
-		outPath := tmp
+		outPath := ""
 		if len(artifactsPath) > 0 {
 			outPath = artifactsPath
 		}

@@ -4,13 +4,31 @@ set -e -x -o pipefail
 
 # Example by Alex Ellis
 
-# https://www.youtube.com/watch?v=tPEE9ZwTmy0
+# AT&T Archives: The UNIX Operating System
+TARGET=https://www.youtube.com/watch?v=tc4ROCJYbm0
+
+export DEBIAN_FRONTEND=noninteractive
+
+# Add ffmpeg to convert to mp4 later
+sudo -E apt-get update -qqqy && \
+  time sudo -E apt-get install -qqqy ffmpeg
+
+DL_URL=https://github.com/yt-dlp/yt-dlp/releases/download/2023.11.16/yt-dlp_linux
+
+if [ "$(uname -m)" == "aarch64" ]; then
+  DL_URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64"
+fi
 
 sudo curl -LSls -o /usr/local/bin/yt-dlp \
-  https://github.com/yt-dlp/yt-dlp/releases/download/2023.11.16/yt-dlp_linux && \
+  $DL_URL && \
   sudo chmod +x /usr/local/bin/yt-dlp
 
+mkdir -p videos
 mkdir -p uploads
 
-yt-dlp -o "uploads/video.flv" "https://www.youtube.com/watch?v=tPEE9ZwTmy0" && \
-  du -h -d 0 uploads/video.flv
+yt-dlp -o "./videos/video.flv" "$TARGET" && \
+  du -h -d 0 ./videos/*
+
+# Convert to mp4
+for i in videos/*; do time ffmpeg -i "$i" ./uploads/"$i".mp4; done
+
