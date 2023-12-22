@@ -53,8 +53,7 @@ You can download a binary from the [Releases page](https://github.com/alexellis/
 For a personal account using a hosted runner and a public repo:
 
 ```bash
-go build
-./actions-batch \
+actions-batch \
   --owner alexellis \
   --token-file ~/pat.txt \
   --runs-on ubuntu-latest \
@@ -66,8 +65,7 @@ go build
 For an organisation, using an Arm-based private repo and custom runner with 32vCPU and 256GB of RAM
 
 ```bash
-go build
-./actions-batch \
+actions-batch \
   --private \
   --owner actuated-samples \
   --token-file ~/pat.txt \
@@ -185,7 +183,7 @@ xdg-open /tmp/artifacts-968188/video.flv
 
 ```bash
 mkdir -p kernel-bin
-go build &&./actions-batch \
+actions-batch \
   --owner alexellis \
   --org=false \
   --file examples/linux-kernel.sh \
