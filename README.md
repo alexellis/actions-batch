@@ -1,6 +1,6 @@
 # actions-batch
 
-A prototype for turning GitHub Actions into a batch job runner.
+Time-sharing supercomputer built on GitHub Actions.
 
 In the 1970s - or so I hear, [time-sharing](https://en.wikipedia.org/wiki/Time-sharing) was all the rage, with users being able to submit tasks or batch jobs to large computers, and to collect the results when the jobs where done.
 
@@ -25,9 +25,14 @@ See an example:
 * [x] Using secrets via repository secrets
 * [x] Downloading the results of a build as an artifact
 
+## You might also be interested in
+
+* [alexellis/run-job](https://github.com/alexellis/run-job) - run one-shot jobs on Kubernetes
+* [OpenFaaS](https://github.com/openfaas/faas) - portable, open-source FaaS for Kubernetes and [standalone containerd](https://github.com/openfaas/faasd)
+
 ## How it works
 
-1. You write a bash script like the ones in [examples](examples) and pass it in as an argument
+1. You write a bash script like the ones in [examples](/examples) and pass it in as an argument
 1. A new repo is created with a random name in the specified organisation
 2. A workflow file is written to the repo along with the shell script, the workflow's only job is to run the shell script and exit
 3. The workflow is triggered and you can check the results
