@@ -354,12 +354,24 @@ By Alex Ellis %d - %s (%s)
 				log.Panicf("failed to read temp dir: %s", err)
 			}
 
+			ignoreLogs := []string{
+				"Upload Artifact",
+				"Complete job",
+				"Check for uploads",
+			}
 			for _, f := range tmpLogsDir {
 				if strings.HasSuffix(f.Name(), ".txt") {
 
+					ignoreLog := false
+					for _, ignore := range ignoreLogs {
+						if strings.Contains(f.Name(), ignore) {
+							ignoreLog = true
+							break
+						}
+					}
+
 					// So that we see the program output
-					if !strings.Contains(f.Name(), "Upload Artifact") &&
-						!strings.Contains(f.Name(), "Complete job") {
+					if !ignoreLog {
 						fmt.Printf("Found file: %s\n---------------------------------\n", f.Name())
 						data, err := os.ReadFile(path.Join(tmpLogs, f.Name()))
 						if err != nil {
