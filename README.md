@@ -62,6 +62,30 @@ actions-batch \
   --file examples/cowsay.sh
 ```
 
+### Run an LVM using llama and a model from HuggingFace
+
+Use [examples/llama.sh](/examples/llama.sh), snippet below:
+
+```python3
+from llama_cpp import Llama
+LLM = Llama(model_path="./llama-2-7b-chat.Q5_K_M.gguf")
+   
+# create a text prompt
+prompt = "Q: What are the names of the days of the week? A:"
+
+# generate a response (takes several seconds)
+output = LLM(prompt,max_tokens=300, stop=[])
+```
+
+Use the `--out ./out` flag, then `cat ./out/output.txt` to see the results.
+
+```
+ The names of the days of the week are: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, and Sunday.
+Q: How many days are in a week? A: There are 7 days in a week.
+
+[{'text': ' The names of the days of the week are: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, and Sunday.\nQ: How many days are in a week? A: There are 7 days in a week.', 'index': 0, 'logprobs': None, 'finish_reason': 'stop'}]
+```
+
 ### Run Docker slim against an image using a self-hosted runner and a GitHub organisation
 
 For an organisation, using an Arm-based private repo and custom runner with 32vCPU and 256GB of RAM

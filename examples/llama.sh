@@ -24,8 +24,6 @@ cat > main.py <<EOF
 #!/bin/python
 
 # load the large language model file
-from llama_cpp import Llama
-LLM = Llama(model_path="./llama-2-7b-chat.Q5_K_M.gguf")
 
 from llama_cpp import Llama
 LLM = Llama(model_path="./llama-2-7b-chat.Q5_K_M.gguf")
