@@ -59,7 +59,7 @@ for question in questions:
     duration = time.time() - startTime
 
     print("")
-    print("[{}}] Q: {}".format(duration, prompt))
+    print("[{}] Q: {}".format(duration, prompt))
     print(output["choices"][0]["text"])
     print("")
 
