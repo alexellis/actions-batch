@@ -9,6 +9,8 @@
 # https://swharden.com/blog/2023-07-29-ai-chat-locally-with-python/
 # Model: https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF
 
+TOKENS=150
+
 cat > questions.txt <<EOF
 Q: What are the names of the days of the week? A:
 Q: Summarise your training data in one sentence. A:
@@ -46,6 +48,8 @@ questions = []
 with open("questions.txt") as f:
     questions = f.readlines()
 
+print("Using {} tokens".format($TOKENS))
+
 for question in questions:
     # create a text prompt
     prompt = question.strip()
@@ -54,12 +58,12 @@ for question in questions:
 
     startTime = time.time()
     # generate a response (takes several seconds)
-    output = LLM(prompt,max_tokens=300, stop=[])
+    output = LLM(prompt,max_tokens=$TOKENS, stop=[])
    
     duration = time.time() - startTime
 
     print("")
-    print("[{}] Q: {}".format(duration, prompt))
+    print("[{}] {}".format(duration, prompt))
     print(output["choices"][0]["text"])
     print("")
 
