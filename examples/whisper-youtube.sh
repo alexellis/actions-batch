@@ -49,7 +49,22 @@ cd ../
 
 time pip install -U openai-whisper
 
-# Transcribe using the tiny model
+# Download the tiny model
 
+cat << EOF > ./download_models.py
+#!/bin/python3
+import sys
+from whisper import _download, _MODELS
+
+models = ["tiny.en"]
+
+for model in models:
+    _download(_MODELS[model], "~/.cache/whisper", False)
+EOF
+
+chmod +x ./download_models.py
+time ./download_models.py
+
+# Transcribe using the tiny model from the cache
 time whisper --language English ./audio/*.mp3 --model tiny > ./uploads/track.txt
 
