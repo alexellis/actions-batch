@@ -14,6 +14,10 @@ set -e -x -o pipefail
 # Rex Kruger: Should you get a Japanese pull saw?
 TARGET=https://www.youtube.com/watch?v=Q7bL61cSUpw
 
+# Use cuda if available, to have it run explicitly on the CPU, set
+# DEVICE="cpu"
+DEVICE="cuda"
+
 export DEBIAN_FRONTEND=noninteractive
 
 # Add ffmpeg to convert to mp4 later
@@ -68,5 +72,5 @@ chmod +x ./download_models.py
 time ./download_models.py
 
 # Transcribe using the tiny model from the cache
-time whisper --language English ./audio/*.mp3 --model tiny > ./uploads/track.txt
+time whisper --device $DEVICE --language English ./audio/*.mp3 --model tiny > ./uploads/track.txt
 
