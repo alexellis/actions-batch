@@ -10,8 +10,9 @@ TARGET=https://www.youtube.com/watch?v=tc4ROCJYbm0
 export DEBIAN_FRONTEND=noninteractive
 
 # Add ffmpeg to convert to mp4 later
-sudo -E apt-get update -qqqy && \
-  time sudo -E apt-get install -qqqy ffmpeg
+sudo -E apt update -qqqy && \
+  time sudo -E apt install -qqqy ffmpeg \
+      --no-install-recommends
 
 DL_URL=https://github.com/yt-dlp/yt-dlp/releases/download/2023.11.16/yt-dlp_linux
 

@@ -22,7 +22,8 @@ time sudo apt update -qqqy && \
         flex \
         libelf-dev \
         dwarves \
-        bc
+        bc \
+        --no-install-recommends
 
 echo "Cloning Linux Kernel branch $BRANCH"
 time git clone https://github.com/torvalds/linux.git linux.git --depth=1 --branch $BRANCH && \

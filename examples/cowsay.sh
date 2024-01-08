@@ -7,6 +7,7 @@ set -e -x -o pipefail
 sudo apt update -qqy && \
     sudo apt install -qqy \
         cowsay \
-        fortune
+        fortune \
+        --no-install-recommends
 
 fortune | cowsay

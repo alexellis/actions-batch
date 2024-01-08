@@ -11,18 +11,17 @@ set -e -x -o pipefail
 
 ## Stage 1 - download the video
 
-# Rex Kruger: Should you get a Japanese pull saw?
-TARGET=https://www.youtube.com/watch?v=Q7bL61cSUpw
+TARGET=https://www.youtube.com/watch?v=igv9LRPzZbE
 
-# Use cuda if available, to have it run explicitly on the CPU, set
-# DEVICE="cpu"
-DEVICE="cuda"
+# If running on cuda, set DEVICE="cuda"
+DEVICE="cpu"
 
 export DEBIAN_FRONTEND=noninteractive
 
 # Add ffmpeg to convert to mp4 later
-sudo -E apt-get update -qqqy && \
-  time sudo -E apt-get install -qqqy ffmpeg
+sudo -E apt update -qqqy && \
+  time sudo -E apt install -qqqy ffmpeg \
+      --no-install-recommends
 
 DL_URL=https://github.com/yt-dlp/yt-dlp/releases/download/2023.11.16/yt-dlp_linux
 
