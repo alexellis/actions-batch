@@ -12,11 +12,11 @@ Run a shell script in an isolated, immutable environment, collect the logs or re
 
 This works well with self-hosted runners managed by actuated (which use a full VM) or GitHub's hosted runners. It may also work with container-based runners, with some limitations on what software can be used securely i.e. `docker`.
 
-See an example:
+> Example output from [examples/cows-docker.sh](examples/cows-docker.sh):
 
-[![https://pbs.twimg.com/media/GB3AqMoXwAASieh?format=jpg&name=medium](https://pbs.twimg.com/media/GB3AqMoXwAASieh?format=jpg&name=medium)](https://twitter.com/alexellisuk/status/1737757819288314091/photo/2)
+[![asciicast](https://asciinema.org/a/IazXh1cJnlaTdvx5c3Rxav8RI.svg)](https://asciinema.org/a/IazXh1cJnlaTdvx5c3Rxav8RI)
 
-> Example output from [examples/govulncheck.sh](examples/govulncheck.sh):
+If your job creates output files, they can be fetched to your machine by making sure you copy them into the "uploads" file in your bash script.
 
 ## What's supported?
 
