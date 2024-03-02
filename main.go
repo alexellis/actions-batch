@@ -18,21 +18,34 @@ import (
 
 	gounits "github.com/docker/go-units"
 
+	"github.com/google/go-github/v57/github"
+	"github.com/inlets/inletsctl/pkg/names"
+	"golang.org/x/oauth2"
+
 	"github.com/alexellis/actions-batch/pkg"
 	"github.com/alexellis/actions-batch/templates"
-	"github.com/google/go-github/v57/github"
-	names "github.com/inlets/inletsctl/pkg/names"
-	"golang.org/x/oauth2"
 )
 
 const branch = "master"
 const quietUnzip = true
+
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	return fmt.Sprintf("%v", *i)
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
 
 func main() {
 
 	var (
 		owner                string
 		fileName             string
+		additionalFiles      arrayFlags
 		tokenFile            string
 		privateRepo          bool
 		organisation         bool
@@ -48,6 +61,7 @@ func main() {
 
 	flag.StringVar(&owner, "owner", "actuated-samples", "The owner of the GitHub repository")
 	flag.StringVar(&fileName, "file", "", "The name of the file to run via a GitHub Action")
+	flag.Var(&additionalFiles, "additional-file", "Additional files to include in the repository, i.e. --additional-file=Dockerfile --additional-file=Makefile")
 	flag.StringVar(&tokenFile, "token-file", "", "The name of the PAT token file")
 	flag.BoolVar(&organisation, "org", true, "Create the repository in an organization")
 	flag.StringVar(&runsOn, "runs-on", "ubuntu-latest", "Runner label for the GitHub action, use ubuntu-latest for a hosted runner")
@@ -89,6 +103,7 @@ By Alex Ellis %d - %s (%s)
 
 	repoName := names.GetRandomName(5)
 	fmt.Printf("Job file: %s\n", path.Base(fileName))
+	fmt.Printf("Additional files: %s\n", path.Base(strings.Join(additionalFiles, ", ")))
 	fmt.Printf("Repo: https://github.com/%s/%s\n", owner, repoName)
 
 	t := os.TempDir()
@@ -164,6 +179,7 @@ By Alex Ellis %d - %s (%s)
 		}
 	}
 
+	// job.sh
 	out, err := templates.Render(templates.RenderParams{
 		Name:    repoName,
 		Login:   login,
@@ -215,6 +231,31 @@ By Alex Ellis %d - %s (%s)
 		log.Panicf("failed to create workflow file: %s", err)
 	}
 
+	// Additional files
+	for _, afile := range additionalFiles {
+		if _, err := os.Stat(afile); os.IsNotExist(err) {
+			log.Panicf("ERROR: %s does not exist, Error: %s", afile, err)
+		}
+		fileBytes, err := os.ReadFile(afile)
+		if err != nil {
+			log.Panicf("failed to read file: %s", err)
+		}
+
+		if _, _, err := client.Repositories.CreateFile(ctx, owner, repoName, path.Base(afile),
+			&github.RepositoryContentFileOptions{
+				Message: github.String(fmt.Sprintf("Add %s", path.Base(afile))),
+				Content: fileBytes,
+				Author: &github.CommitAuthor{
+					Name:  github.String("actuated-batch"),
+					Email: github.String("actuated-samples@users.noreply.github.com"),
+				},
+				Branch: github.String(branch),
+			}); err != nil {
+			log.Panicf("failed to create file: %s", err)
+		}
+	}
+
+	// GitHub Actions workflow upload
 	fileBytes, err = os.ReadFile(actionsFile)
 	if err != nil {
 		log.Panicf("failed to read workflow file: %s", err)

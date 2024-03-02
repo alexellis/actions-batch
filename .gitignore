@@ -3,3 +3,4 @@
 /.secrets
 /example/.secrets
 /out/**
+token.txt
