@@ -56,7 +56,7 @@ cat << EOF > ./download_models.py
 import sys, os
 from whisper import _download, _MODELS
 
-models = ["medium.en"]
+models = ["tiny.en"]
 
 home = os.path.expanduser('~')
 
