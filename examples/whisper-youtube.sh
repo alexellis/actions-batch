@@ -53,13 +53,15 @@ time pip install -U openai-whisper
 
 cat << EOF > ./download_models.py
 #!/bin/python3
-import sys
+import sys, os
 from whisper import _download, _MODELS
 
-models = ["tiny.en"]
+models = ["medium.en"]
+
+home = os.path.expanduser('~')
 
 for model in models:
-    _download(_MODELS[model], "~/.cache/whisper", False)
+    _download(_MODELS[model], os.path.join(home, ".cache/whisper"), False)
 EOF
 
 chmod +x ./download_models.py
