@@ -11,7 +11,7 @@ set -e -x -o pipefail
 
 mkdir -p uploads
 
-cat > Dockerfile <<EOF
+cat <<'EOF' >Dockerfile
 FROM alpine:latest
 
 RUN apk --no-cache add curl
@@ -23,4 +23,4 @@ docker build -t curl:latest .
 
 # export the image to a tar file
 
-docker save curl:latest > uploads/curl.tar
+docker save curl:latest >uploads/curl.tar
