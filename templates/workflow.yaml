@@ -31,7 +31,7 @@ jobs:
     name: {{ .Name }}
     runs-on: {{ .RunsOn }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Run the job
         run: |
           echo "HAS_UPLOADS=0" >> $GITHUB_ENV
