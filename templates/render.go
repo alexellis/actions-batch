@@ -2,22 +2,28 @@ package templates
 
 import (
 	"bytes"
+	_ "embed"
 	"log"
 	"os"
 	"text/template"
 )
 
+//go:embed workflow.yaml
+var defaultWorkflow string
+
 func Render(p RenderParams) (string, error) {
+	var workflowT *template.Template
+	relativeTmplPath := "./workflow.yaml"
 
-	tmplPath := "./templates/workflow.yaml"
-	if _, err := os.Stat(tmplPath); err != nil && os.IsNotExist(err) {
-		tmplPath = "./workflow.yaml"
-	}
+	if _, err := os.Stat(relativeTmplPath); err == nil {
+		tmpl := template.Must(template.ParseFiles(relativeTmplPath))
+		workflowT, err = tmpl.ParseFiles(relativeTmplPath)
 
-	tmpl := template.Must(template.ParseFiles(tmplPath))
-	workflowT, err := tmpl.ParseFiles(tmplPath)
-	if err != nil {
-		log.Panicf("failed to parse workflow template: %s", err)
+		if err != nil {
+			log.Panicf("failed to parse workflow template: %s", err)
+		}
+	} else {
+		workflowT = template.Must(template.New("workflow").Parse(defaultWorkflow))
 	}
 
 	buf := bytes.NewBuffer(nil)
